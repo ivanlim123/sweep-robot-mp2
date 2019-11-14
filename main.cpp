@@ -7,10 +7,23 @@
 //
 
 #include <iostream>
+#include <fstream>
+#include <string>
+
+#define MAX_INPUT_NUMBER 1010
 
 using namespace std;
 
 int counts = 0;
+int num = 0;
+ifstream InputFile;
+ofstream OutputFile;
+
+class Grid {
+public:
+    int x;
+    int y;
+};
 
 class Map {
 public:
@@ -21,26 +34,90 @@ public:
     char **array;
     int **minStep;
     bool **visited;
+    Grid *path;
+    int currentPathNum;
+    int maxPathNum;
+    bool **shortestPath;
+    int pathCount;
     
     int batteryX, batteryY;
     int curX, curY;
     int myBattery;
     int remaining;
+    int direction;
     
     void printMap();
     void BFS();
     void BFSUtil(int x, int y, int steps, int *queueX, int *queueY);
+    void walk();
+    void charge();
+    void WalkNext();
+    void FindNext();
+    int FindNextUtil(int x, int y, Grid *queue);
+    void ConstructPath(int x, int y);
+    void ConstructPathUtil(int x, int y, int steps, int *queueX, int *queueY, int **minimumStep);
+    void back();
 };
 
 int main(void) {
+    InputFile.open("floor.data");
+    OutputFile.open("output.data");
+    
+    string line;
+    string command[MAX_INPUT_NUMBER];
+    int index = 0;
+    
+    if(InputFile.is_open()) {
+        while(!InputFile.eof()) {
+            getline(InputFile, line);
+            command[index++] = line;
+        }
+        InputFile.close();
+    }
+    else {
+        cout<<"Cannot open Input"<<endl;
+    }
+    
     int row = 0, col = 0;
     int battery = 0;
-    cin>>row>>col>>battery;
+    string first_line = command[0];
+    string first = "";
+    string second = "";
+    string third = "";
+    bool space1 = false;
+    bool space2 = false;
+    unsigned long len = first_line.length();
+    for(unsigned long i = 0; i < len; i++) {
+        char ch = first_line[i];
+        if(ch==' ') {
+            if(!space1) {
+                space1 = true;
+            }
+            else {
+                space2 = true;
+            }
+        }
+        if(!space1 && !space2) {
+            first.push_back(ch);
+        }
+        else if(space1 && !space2) {
+            second.push_back(ch);
+        }
+        else {
+            third.push_back(ch);
+        }
+    }
+    row = stoi(first);
+    col = stoi(second);
+    battery = stoi(third);
+    
+    //cin>>row>>col>>battery;
     Map myMap(row, col, battery);
     
     for(int i = 0; i < row; i++) {
+        string input = command[i+1];
         for(int j = 0; j < col; j++) {
-            cin>>myMap.array[i][j];
+            myMap.array[i][j] = input[j];
             // find starting point
             if(myMap.array[i][j] == 'R') {
                 myMap.batteryX = i;
@@ -52,8 +129,33 @@ int main(void) {
         }
     }
     myMap.BFS();
-    myMap.printMap();
+    //myMap.printMap();
     
+    counts = 0;
+    OutputFile<<myMap.curX<<" "<<myMap.curY<<" "<<endl;
+    myMap.visited[myMap.curX][myMap.curY] = true;
+    while(myMap.remaining>0) {
+        //cout<<"battery: "<<myMap.myBattery<<" remaining: "<<myMap.remaining<<endl;
+        //myMap.printMap();
+        myMap.walk();
+    }
+    //cout<<"----back----"<<endl;
+    myMap.back();
+    cout<<counts<<endl;
+    
+    //myMap.printMap();
+    OutputFile.close();
+    InputFile.open("output.data");
+    if(InputFile.is_open()) {
+        while(!InputFile.eof()) {
+            getline(InputFile, line);
+            cout<<line<<endl;
+        }
+        InputFile.close();
+    }
+    else {
+        cout<<"Cannot open Input"<<endl;
+    }
     return 0;
 }
 
@@ -61,23 +163,37 @@ Map::Map(int Row, int Col, int Battery) {
     row = Row;
     col = Col;
     battery = Battery;
+    myBattery = battery;
     remaining = 0;
+    direction = 0;
+    currentPathNum = 0;
+    maxPathNum = 0;
+    pathCount = 0;
     array = new char*[row];
     minStep = new int*[row];
+    visited = new bool*[row];
+    shortestPath = new bool*[row];
     for(int i = 0; i < row; i++) {
         array[i] = new char[col];
         minStep[i] = new int[col];
+        visited[i] = new bool[col];
+        shortestPath[i] = new bool[col];
     }
     
     for(int i = 0; i < row; i++) {
         for(int j = 0; j < col; j++) {
             array[i][j] = 0;
             minStep[i][j] = -1;
+            visited[i][j] = false;
+            shortestPath[i][j] = false;
         }
     }
+    
+    
 }
 
 void Map::printMap() {
+    /*
     for(int i = 0; i < row; i++) {
         for(int j = 0; j < col; j++) {
             cout<<array[i][j];
@@ -85,7 +201,8 @@ void Map::printMap() {
         cout<<endl;
     }
     cout<<endl;
-    
+    */
+    /*
     for(int i = 0; i < row; i++) {
         for(int j = 0; j < col; j++) {
             if(minStep[i][j]>-1 && minStep[i][j]<10) cout<<" ";
@@ -93,6 +210,20 @@ void Map::printMap() {
         }
         cout<<endl;
     }
+    */
+    
+    for(int i = 0; i < row; i++) {
+        for(int j = 0; j < col; j++) {
+            if(visited[i][j]) {
+                cout<<" 1";
+            }
+            else  {
+                cout<<" 0";
+            }
+        }
+        cout<<endl;
+    }
+     
 }
 
 void Map::BFS() {
@@ -133,3 +264,319 @@ void Map::BFSUtil(int x, int y, int steps, int *queueX, int *queueY) {
     }
 }
 
+void Map::walk() {
+    visited[curX][curY] = true;
+    if(curX==batteryX && curY==batteryY) {
+        //cout<<"-----Full----"<<endl;
+        myBattery = battery;
+        direction = 1;
+    }
+    if(myBattery<=minStep[curX][curY]) {
+        //cout<<"-----Charging----"<<endl;
+        charge();
+    }
+    else {
+        WalkNext();
+    }
+    OutputFile<<curX<<" "<<curY<<" "<<endl;
+}
+
+void Map::charge() {
+    int nextX = -1, nextY = -1;
+    if(nextX==-1 && nextY==-1) {
+        //visit floor with minStep
+        if(minStep[curX][curY-1]<minStep[curX][curY] && !visited[curX][curY-1] && minStep[curX][curY-1]!=-1) {
+            nextX = curX;
+            nextY = curY-1;
+        }
+        else if(minStep[curX-1][curY]<minStep[curX][curY] && !visited[curX-1][curY] && minStep[curX-1][curY]!=-1) {
+            nextX = curX-1;
+            nextY = curY;
+        }
+        else if(minStep[curX][curY+1]<minStep[curX][curY] && !visited[curX][curY+1] && minStep[curX][curY+1]!=-1) {
+            nextX = curX;
+            nextY = curY+1;
+        }
+        else if(minStep[curX+1][curY]<minStep[curX][curY] && !visited[curX+1][curY] && minStep[curX+1][curY]!=-1) {
+            nextX = curX+1;
+            nextY = curY;
+        }
+        
+        //nearby floors have been visted
+        //visit the floor with minimum steps
+        if(nextX==-1 && nextY==-1) {
+            int min = minStep[curX][curY];
+            if(minStep[curX][curY+1]<min && minStep[curX][curY+1]!=-1) {
+                min = minStep[curX][curY+1];
+                nextX = curX;
+                nextY = curY+1;
+            }
+            if(minStep[curX+1][curY]<min && minStep[curX+1][curY]!=-1) {
+                min = minStep[curX+1][curY];
+                nextX = curX+1;
+                nextY = curY;
+            }
+            if(minStep[curX][curY-1]<min && minStep[curX][curY-1]!=-1) {
+                min = minStep[curX][curY-1];
+                nextX = curX;
+                nextY = curY-1;
+            }
+            if(minStep[curX-1][curY]<min && minStep[curX-1][curY]!=-1) {
+                min = minStep[curX-1][curY];
+                nextX = curX-1;
+                nextY = curY;
+            }
+        }
+    }
+    curX = nextX;
+    curY = nextY;
+    
+    if(!visited[curX][curY]) remaining--;
+    myBattery--;
+    counts++;
+}
+
+void Map::WalkNext() {
+    int nextX = -1, nextY = -1;
+    if(curY!=0 && minStep[curX][curY-1]>minStep[curX][curY] && !visited[curX][curY-1]) {
+        nextX = curX;
+        nextY = curY-1;
+        direction = 0;
+    }
+    else if(curX!=0 && minStep[curX-1][curY]>minStep[curX][curY] && !visited[curX-1][curY]) {
+        nextX = curX-1;
+        nextY = curY;
+        direction = 0;
+    }
+    else if(curY != col-1 && minStep[curX][curY+1]>minStep[curX][curY] && !visited[curX][curY+1]) {
+        nextX = curX;
+        nextY = curY+1;
+        direction = 0;
+    }
+    else if(curX != row-1 && minStep[curX+1][curY]>minStep[curX][curY] && !visited[curX+1][curY]) {
+        nextX = curX+1;
+        nextY = curY;
+        direction = 0;
+    }
+    
+    if(nextX==-1 && nextY==-1) {
+        //all furthest floors have visited
+        if(curY!=0 && minStep[curX][curY-1]<minStep[curX][curY] && !visited[curX][curY-1] && minStep[curX][curY-1]!=-1) {
+            nextX = curX;
+            nextY = curY-1;
+            direction = 0;
+        }
+        else if(curX!=0 && minStep[curX-1][curY]<minStep[curX][curY] && !visited[curX-1][curY] && minStep[curX-1][curY]!=-1) {
+            nextX = curX-1;
+            nextY = curY;
+            direction = 0;
+        }
+        else if(curY!=col-1 && minStep[curX][curY+1]<minStep[curX][curY] && !visited[curX][curY+1] && minStep[curX][curY+1]!=-1) {
+            nextX = curX;
+            nextY = curY+1;
+            direction = 0;
+        }
+        else if(curX!=row-1 && minStep[curX+1][curY]<minStep[curX][curY] && !visited[curX+1][curY] && minStep[curX+1][curY]!=-1) {
+            nextX = curX+1;
+            nextY = curY;
+            direction = 0;
+        }
+        
+        /*
+        //nearby floors have been visted
+        if(nextX==-1 && nextY==-1) {
+            remaining++;
+            
+            if(direction==1) {
+                //after charging go back
+                if(curY != col-1 && minStep[curX][curY+1]>minStep[curX][curY] && visited[curX][curY+1] && minStep[curX][curY+1]!=-1) {
+                    nextX = curX;
+                    nextY = curY+1;
+                }
+                else if(curX!=0 && minStep[curX-1][curY]>minStep[curX][curY] && visited[curX-1][curY] && minStep[curX-1][curY]!=-1) {
+                    nextX = curX-1;
+                    nextY = curY;
+                }
+                else if(curY!=0 && minStep[curX][curY-1]>minStep[curX][curY] && visited[curX][curY-1] && minStep[curX][curY-1]!=-1) {
+                    nextX = curX;
+                    nextY = curY-1;
+                }
+                else if(curX != row-1 && minStep[curX+1][curY]>minStep[curX][curY] && visited[curX+1][curY] && minStep[curX+1][curY]!=-1) {
+                    nextX = curX+1;
+                    nextY = curY;
+                }
+            }
+            else {
+                //visit floors with min step
+                int min = minStep[curX][curY];
+                if(curY!=col-1 && minStep[curX][curY+1]<min && minStep[curX][curY+1]!=-1) {
+                    min = minStep[curX][curY+1];
+                    nextX = curX;
+                    nextY = curY+1;
+                }
+                if(curX!=row-1 && minStep[curX+1][curY]<min && minStep[curX+1][curY]!=-1) {
+                    min = minStep[curX+1][curY];
+                    nextX = curX+1;
+                    nextY = curY;
+                }
+                if(curY!=0 && minStep[curX][curY-1]<min && minStep[curX][curY-1]!=-1) {
+                    min = minStep[curX][curY-1];
+                    nextX = curX;
+                    nextY = curY-1;
+                }
+                if(curX!=0 && minStep[curX-1][curY]<min && minStep[curX-1][curY]!=-1) {
+                    min = minStep[curX-1][curY];
+                    nextX = curX-1;
+                    nextY = curY;
+                }
+            }
+         
+        }
+         */
+        
+    }
+    if(maxPathNum) {
+        //SetDestination(path[cur]);
+        if(currentPathNum<maxPathNum) {
+            nextX = path[currentPathNum].x;
+            nextY = path[currentPathNum].y;
+            currentPathNum++;
+        }
+    }
+    
+    if(nextX==-1 && nextY==-1) {
+        if(maxPathNum!=0) delete []path;
+        FindNext();
+        nextX = path[currentPathNum].x;
+        nextY = path[currentPathNum].y;
+        currentPathNum++;
+    }
+    curX = nextX;
+    curY = nextY;
+    
+    if(!visited[curX][curY])remaining--;
+    myBattery--;
+    counts++;
+}
+
+void Map::ConstructPathUtil(int x, int y, int steps, int *queueX, int *queueY, int **minimumStep) {
+    if(x>=0 && y>=0 && x<row && y<col) {
+        if(array[x][y]=='0' && minimumStep[x][y]==-1) {
+            minimumStep[x][y] = steps;
+            queueX[pathCount] = x;
+            queueY[pathCount] = y;
+            pathCount++;
+        }
+    }
+}
+
+void Map::ConstructPath(int x, int y) {
+    pathCount = 0;
+    
+    int **minimumStep = new int*[row];
+    for(int i = 0; i < row; i++) {
+        minimumStep[i] = new int[col];
+        for(int j = 0; j < col; j++) {
+            minimumStep[i][j] = -1;
+        }
+    }
+    
+    int *queueX = new int[row*col];
+    int *queueY = new int[row*col];
+    int steps = 0;
+    int stop = 0;
+    minimumStep[curX][curY] = steps;
+    queueX[pathCount] = curX;
+    queueY[pathCount] = curY;
+    pathCount++;
+    
+    int current = 0;
+    for(steps = 1; pathCount != stop; steps++) {
+        stop = pathCount;
+        for(; current < stop; current++) {
+            ConstructPathUtil(queueX[current]+1, queueY[current], steps, queueX, queueY, minimumStep);
+            ConstructPathUtil(queueX[current]-1, queueY[current], steps, queueX, queueY, minimumStep);
+            ConstructPathUtil(queueX[current], queueY[current]+1, steps, queueX, queueY, minimumStep);
+            ConstructPathUtil(queueX[current], queueY[current]-1, steps, queueX, queueY, minimumStep);
+        }
+    }
+    delete []queueX;
+    delete []queueY;
+    
+    path = new Grid[minimumStep[x][y]+1];
+    currentPathNum = 1;
+    maxPathNum = minimumStep[x][y]+1;
+    while(minimumStep[x][y]) {
+        path[minimumStep[x][y]].x = x;
+        path[minimumStep[x][y]].y = y;
+        if(y!=0 && minimumStep[x][y-1]!=-1 && minimumStep[x][y-1]<minimumStep[x][y]) y--;
+        else if(x!=0 && minimumStep[x-1][y]!=-1 && minimumStep[x-1][y]<minimumStep[x][y]) x--;
+        else if(y!=col-1 && minimumStep[x][y+1]!=-1 && minimumStep[x][y+1]<minimumStep[x][y]) y++;
+        else if(x!=row-1 && minimumStep[x+1][y]!=-1 && minimumStep[x+1][y]<minimumStep[x][y]) x++;
+    }
+    
+    for(int i = 0; i < row; i++) {
+        delete []minimumStep[i];
+    }
+    delete []minimumStep;
+}
+
+void Map::FindNext() {
+    Grid *queue = new Grid[row*col];
+    for(int i = 0; i < row; i++) {
+        for(int j = 0; j < col; j++) {
+            shortestPath[i][j] = false;
+        }
+    }
+    num = 0;
+    int stop = 0;
+    queue[num].x = curX;
+    queue[num].y = curY;
+    num++;
+    
+    int current = 0;
+    while(num != stop) {
+        stop = num;
+        for(; current < stop; current++) {
+            //cout<<"current queue: "<<queue[current].x<<" "<<queue[current].y<<endl;
+            int finish = 0;
+            finish = FindNextUtil(queue[current].x-1, queue[current].y, queue);
+            if(finish) goto End;
+            finish = FindNextUtil(queue[current].x, queue[current].y-1, queue);
+            if(finish) goto End;
+            finish = FindNextUtil(queue[current].x, queue[current].y+1, queue);
+            if(finish) goto End;
+            finish = FindNextUtil(queue[current].x+1, queue[current].y, queue);
+            if(finish) goto End;
+        }
+    }
+End:;
+    //cout<<"Find Next:"<<queue[num].x<<" "<<queue[num].y<<endl;;
+    ConstructPath(queue[num].x, queue[num].y);
+    delete []queue;
+}
+
+int Map::FindNextUtil(int x, int y, Grid *queue) {
+    if(x>=0 && y>=0 && x<row && y<col) {
+        if(array[x][y]=='0' && !shortestPath[x][y]) {
+            shortestPath[x][y] = true;
+            queue[num].x = x;
+            queue[num].y = y;
+            if(!visited[x][y]) return 1;
+            num++;
+        }
+    }
+    return 0;
+}
+
+void Map::back() {
+    while(minStep[curX][curY]) {
+        if(curY!=0 && minStep[curX][curY-1]!=-1 && minStep[curX][curY-1]<minStep[curX][curY]) curY--;
+        else if(curX!=0 && minStep[curX-1][curY]!=-1 && minStep[curX-1][curY]<minStep[curX][curY]) curX--;
+        else if(curY!=col-1 && minStep[curX][curY+1]!=-1 && minStep[curX][curY+1]<minStep[curX][curY]) curY++;
+        else if(curX!=row-1 && minStep[curX+1][curY]!=-1 && minStep[curX+1][curY]<minStep[curX][curY]) curX++;
+        OutputFile<<curX<<" "<<curY<<" "<<endl;
+        counts++;
+        if(!visited[curX][curY]) visited[curX][curY] = true;
+    }
+}
