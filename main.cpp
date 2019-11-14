@@ -28,6 +28,7 @@ public:
 class Map {
 public:
     Map(int Row = 0, int Col = 0, int Battery = 0);
+    ~Map();
     int row, col;
     int battery;
     
@@ -157,6 +158,19 @@ int main(void) {
         cout<<"Cannot open Input"<<endl;
     }
     return 0;
+}
+
+Map::~Map() {
+    for(int i = 0; i < row; i++) {
+        delete [](array[i]);
+        delete [](minStep[i]);
+        delete [](visited[i]);
+        delete [](shortestPath[i]);
+    }
+    delete []array;
+    delete []minStep;
+    delete []visited;
+    delete []shortestPath;
 }
 
 Map::Map(int Row, int Col, int Battery) {
@@ -516,7 +530,7 @@ void Map::ConstructPath(int x, int y) {
     }
     
     for(int i = 0; i < row; i++) {
-        delete []minimumStep[i];
+        delete [](minimumStep[i]);
     }
     delete []minimumStep;
 }
