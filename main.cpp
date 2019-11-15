@@ -97,22 +97,25 @@ int main(void) {
     }
     //cout<<"----back----"<<endl;
     myMap.back();
-    cout<<counts<<endl;
+    //cout<<counts<<endl;
     
     //myMap.printMap();
     OutputFile.close();
     InputFile.open("output.data");
+    OutputFile.open("final.path");
+    OutputFile<<counts<<endl;
     string line;
     if(InputFile.is_open()) {
         while(!InputFile.eof()) {
             getline(InputFile, line);
-            cout<<line<<endl;
+            OutputFile<<line<<endl;
         }
         InputFile.close();
     }
     else {
         cout<<"Cannot open Input"<<endl;
     }
+    OutputFile.close();
     return 0;
 }
 
