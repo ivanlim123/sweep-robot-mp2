@@ -11,25 +11,26 @@
 #include <string>
 #include <vector>
 
-#define MAX_INPUT_NUMBER 10000
-
 using namespace std;
 
 char my_array[1001][1001];
 char my_compare[1001][1001];
 
 int main() {
+    ifstream MapFile;
+    MapFile.open("floor.data");
     ifstream InputFile;
     InputFile.open("final.path");
     
     int row = 0, col = 0;
     int battery = 0;
-    cin>>row>>col>>battery;
+    MapFile>>row>>col>>battery;
     for(int i = 0; i < row; i++) {
         for(int j = 0; j < col; j++) {
-            cin>>my_array[i][j];
+            MapFile>>my_array[i][j];
         }
     }
+    MapFile.close();
     
     for(int i = 0; i < row; i++) {
         for(int j = 0; j < col; j++) {
