@@ -20,7 +20,7 @@ char my_compare[1001][1001];
 
 int main() {
     ifstream InputFile;
-    InputFile.open("output.data");
+    InputFile.open("final.path");
     
     int row = 0, col = 0;
     int battery = 0;
@@ -40,45 +40,12 @@ int main() {
     int x = 0, y = 0;
     int bx = 0, by = 0;
     
-    string line;
-    string command[MAX_INPUT_NUMBER];
-    int index = 0;
+    int count = 0;
+    InputFile>>count;
+    count++;
     
-    if(InputFile.is_open()) {
-        while(!InputFile.eof()) {
-            getline(InputFile, line);
-            command[index++] = line;
-        }
-        InputFile.close();
-    }
-    else {
-        cout<<"Cannot open Input"<<endl;
-    }
-    cout<<endl;
-    
-    for(int i = 0; i < index-1; i++) {
-        string cmd = command[i];
-        string first = "";
-        string second = "";
-        bool space = false;
-        unsigned long len = cmd.length();
-        for(unsigned long j = 0; j < len; j++) {
-            char ch = cmd[j];
-            if(ch==' ') {
-                if(!space) {
-                    space = true;
-                }
-            }
-            if(!space) {
-                first.push_back(ch);
-            }
-            else if(space) {
-                second.push_back(ch);
-            }
-        }
-        x = stoi(first);
-        y = stoi(second);
-        
+    for(int i = 0; i < count; i++) {
+        InputFile>>x>>y;
 
         if(i==0) {
             bx = x;
@@ -87,7 +54,7 @@ int main() {
         my_compare[x][y] = '0';
     }
     my_compare[bx][by] = 'R';
-    
+    InputFile.close();
     
     for(int i = 0; i < row; i++) {
         for(int j = 0; j < col; j++) {
