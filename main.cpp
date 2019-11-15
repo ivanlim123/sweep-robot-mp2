@@ -64,61 +64,15 @@ int main(void) {
     InputFile.open("floor.data");
     OutputFile.open("output.data");
     
-    string line;
-    string command[MAX_INPUT_NUMBER];
-    int index = 0;
-    
-    if(InputFile.is_open()) {
-        while(!InputFile.eof()) {
-            getline(InputFile, line);
-            command[index++] = line;
-        }
-        InputFile.close();
-    }
-    else {
-        cout<<"Cannot open Input"<<endl;
-    }
-    
     int row = 0, col = 0;
     int battery = 0;
-    string first_line = command[0];
-    string first = "";
-    string second = "";
-    string third = "";
-    bool space1 = false;
-    bool space2 = false;
-    unsigned long len = first_line.length();
-    for(unsigned long i = 0; i < len; i++) {
-        char ch = first_line[i];
-        if(ch==' ') {
-            if(!space1) {
-                space1 = true;
-            }
-            else {
-                space2 = true;
-            }
-        }
-        if(!space1 && !space2) {
-            first.push_back(ch);
-        }
-        else if(space1 && !space2) {
-            second.push_back(ch);
-        }
-        else {
-            third.push_back(ch);
-        }
-    }
-    row = stoi(first);
-    col = stoi(second);
-    battery = stoi(third);
     
-    //cin>>row>>col>>battery;
+    InputFile>>row>>col>>battery;
     Map myMap(row, col, battery);
     
     for(int i = 0; i < row; i++) {
-        string input = command[i+1];
         for(int j = 0; j < col; j++) {
-            myMap.array[i][j] = input[j];
+            InputFile>>myMap.array[i][j];
             // find starting point
             if(myMap.array[i][j] == 'R') {
                 myMap.batteryX = i;
@@ -129,6 +83,7 @@ int main(void) {
             }
         }
     }
+    InputFile.close();
     myMap.BFS();
     //myMap.printMap();
     
@@ -147,6 +102,7 @@ int main(void) {
     //myMap.printMap();
     OutputFile.close();
     InputFile.open("output.data");
+    string line;
     if(InputFile.is_open()) {
         while(!InputFile.eof()) {
             getline(InputFile, line);
