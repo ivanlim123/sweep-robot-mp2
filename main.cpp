@@ -91,7 +91,8 @@ int main(void) {
     OutputFile<<myMap.curX<<" "<<myMap.curY<<" "<<endl;
     myMap.visited[myMap.curX][myMap.curY] = true;
     while(myMap.remaining>0) {
-        //cout<<"battery: "<<myMap.myBattery<<" remaining: "<<myMap.remaining<<endl;
+        //if(myMap.myBattery<0)
+        //cout<<"minstep: "<<myMap.minStep[myMap.curX][myMap.curY]<<" "<<"battery: "<<myMap.myBattery<<" remaining: "<<myMap.remaining<<endl;
         //myMap.printMap();
         myMap.walk();
     }
@@ -175,7 +176,7 @@ void Map::printMap() {
     }
     cout<<endl;
     */
-    /*
+    
     for(int i = 0; i < row; i++) {
         for(int j = 0; j < col; j++) {
             if(minStep[i][j]>-1 && minStep[i][j]<10) cout<<" ";
@@ -183,8 +184,8 @@ void Map::printMap() {
         }
         cout<<endl;
     }
-    */
     
+    /*
     for(int i = 0; i < row; i++) {
         for(int j = 0; j < col; j++) {
             if(visited[i][j]) {
@@ -196,7 +197,7 @@ void Map::printMap() {
         }
         cout<<endl;
     }
-     
+    */
 }
 
 void Map::BFS() {
@@ -221,7 +222,7 @@ void Map::BFS() {
             BFSUtil(queueX[current], queueY[current]-1, steps, queueX, queueY);
         }
     }
-    
+    //cout<<steps;
     delete []queueX;
     delete []queueY;
 }
@@ -424,8 +425,15 @@ void Map::WalkNext() {
         nextY = path[currentPathNum].y;
         currentPathNum++;
     }
-    curX = nextX;
-    curY = nextY;
+    
+    if(minStep[nextX][nextY]>=myBattery) {
+        charge();
+        return;
+    }
+    else {
+        curX = nextX;
+        curY = nextY;
+    }
     
     if(!visited[curX][curY])remaining--;
     myBattery--;
