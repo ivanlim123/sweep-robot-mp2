@@ -442,7 +442,7 @@ void Map::WalkNext() {
 
 void Map::ConstructPathUtil(int x, int y, int steps, int *queueX, int *queueY, int **minimumStep) {
     if(x>=0 && y>=0 && x<row && y<col) {
-        if(array[x][y]=='0' && minimumStep[x][y]==-1) {
+        if((array[x][y]=='0' || array[x][y]=='R') && minimumStep[x][y]==-1) {
             minimumStep[x][y] = steps;
             queueX[pathCount] = x;
             queueY[pathCount] = y;
@@ -539,7 +539,7 @@ End:;
 
 int Map::FindNextUtil(int x, int y, Grid *queue) {
     if(x>=0 && y>=0 && x<row && y<col) {
-        if(array[x][y]=='0' && !shortestPath[x][y]) {
+        if((array[x][y]=='0' || array[x][y]=='R')&& !shortestPath[x][y]) {
             shortestPath[x][y] = true;
             queue[num].x = x;
             queue[num].y = y;
