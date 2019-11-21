@@ -91,12 +91,13 @@ int main(void) {
     OutputFile<<myMap.curX<<" "<<myMap.curY<<" "<<endl;
     myMap.visited[myMap.curX][myMap.curY] = true;
     while(myMap.remaining>0) {
+        //cout<<myMap.curX<<" "<<myMap.curY<<" "<<endl;
         //if(myMap.myBattery<0)
         //cout<<"minstep: "<<myMap.minStep[myMap.curX][myMap.curY]<<" "<<"battery: "<<myMap.myBattery<<" remaining: "<<myMap.remaining<<endl;
         //myMap.printMap();
         myMap.walk();
     }
-    //cout<<"----back----"<<endl;
+    //OutputFile<<"----back----"<<endl;
     myMap.back();
     //cout<<counts<<endl;
     
@@ -189,14 +190,15 @@ void Map::printMap() {
     for(int i = 0; i < row; i++) {
         for(int j = 0; j < col; j++) {
             if(visited[i][j]) {
-                cout<<" 1";
+                OutputFile<<" 1";
             }
             else  {
-                cout<<" 0";
+                OutputFile<<" 0";
             }
         }
-        cout<<endl;
+        OutputFile<<endl;
     }
+    OutputFile<<endl;
     */
 }
 
@@ -242,11 +244,12 @@ void Map::walk() {
     visited[curX][curY] = true;
     if(curX==batteryX && curY==batteryY) {
         //cout<<"-----Full----"<<endl;
+        maxPathNum = 0;
         myBattery = battery;
         direction = 1;
     }
     if(myBattery<=minStep[curX][curY]) {
-        //cout<<"-----Charging----"<<endl;
+        //OutputFile<<"-----Charging----"<<endl;
         charge();
     }
     else {
